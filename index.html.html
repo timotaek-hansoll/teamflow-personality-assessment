@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="ko" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>우리 팀 성향 분석 (DISC Assessment)</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            activeType: {
+              light: '#FEF3C7',
+              DEFAULT: '#F59E0B',
+              dark: '#D97706'
+            },
+            judoType: {
+              light: '#FEE2E2',
+              DEFAULT: '#EF4444',
+              dark: '#DC2626'
+            },
+            analysisType: {
+              light: '#DBEAFE',
+              DEFAULT: '#3B82F6',
+              dark: '#2563EB'
+            },
+            acceptType: {
+              light: '#D1FAE5',
+              DEFAULT: '#10B981',
+              dark: '#059669'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans KR', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts & Lucide Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', 'Noto Sans KR', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col text-slate-800">
+
+  <!-- Vue Root Element -->
+  <div id="app" class="flex flex-col min-h-screen" v-cloak>
+    
+    <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-3 cursor-pointer" @click="goHome">
+          <div class="p-2 bg-gradient-to-tr from-indigo-600 to-indigo-500 rounded-xl text-white shadow-md shadow-indigo-100">
+            <i data-lucide="layers" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <span class="font-extrabold text-lg text-slate-900 tracking-tight">TeamFlow</span>
+            <span class="ml-2 px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-md font-medium">성향분석</span>
+          </div>
+        </div>
+
+        <nav class="hidden md:flex space-x-1">
+          <button @click="activeView = 'intro'" :class="activeView === 'intro' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'" class="px-4 py-2 rounded-xl text-sm font-semibold transition-all">홈</button>
+          <button @click="startAssessment" :class="activeView === 'test' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'" class="px-4 py-2 rounded-xl text-sm font-semibold transition-all">진단하기</button>
+          <button @click="viewTeamBoard" :class="activeView === 'team' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'" class="px-4 py-2 rounded-xl text-sm font-semibold transition-all">팀 대시보드</button>
+        </nav>
+
+        <div class="flex items-center space-x-3">
+          <span :class="isFirebaseActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'" class="px-2.5 py-1 text-xs font-semibold rounded-full border flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full" :class="isFirebaseActive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'"></span>
+            {{ isFirebaseActive ? '클라우드 동기화' : '로컬 모드' }}
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      
+      <!-- VIEW 1: Intro Splash Screen -->
+      <section v-if="activeView === 'intro'" class="space-y-12 max-w-4xl mx-auto py-4">
+        <div class="text-center space-y-4">
+          <span class="px-4 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold tracking-wide uppercase inline-block">
+            4대 성향 분석 기반 협업 성향 진단
+          </span>
+          <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+            서로를 이해할 때,<br class="sm:hidden"> 팀의 시너지는 시작됩니다
+          </h2>
+        </div>
+
+        <!-- Four Personality Types Matrix Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition duration-300">
+            <div class="w-12 h-12 rounded-xl bg-activeType-light text-activeType flex items-center justify-center mb-4 font-bold text-lg">A</div>
+            <h4 class="text-lg font-bold text-slate-900 mb-1">활발형 (Sanguine)</h4>
+            <p class="text-slate-500 text-sm leading-relaxed">사교적이며 열정적인 타입. 주도적으로 대화를 이끌고 긍정적인 에너지를 전파합니다.</p>
+          </div>
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition duration-300">
+            <div class="w-12 h-12 rounded-xl bg-judoType-light text-judoType flex items-center justify-center mb-4 font-bold text-lg">B</div>
+            <h4 class="text-lg font-bold text-slate-900 mb-1">주도형 (Choleric)</h4>
+            <p class="text-slate-500 text-sm leading-relaxed">의지가 강하고 주도적인 타입. 목표 달성을 향해 빠르게 실행하고 개척합니다.</p>
+          </div>
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition duration-300">
+            <div class="w-12 h-12 rounded-xl bg-analysisType-light text-analysisType flex items-center justify-center mb-4 font-bold text-lg">C</div>
+            <h4 class="text-lg font-bold text-slate-900 mb-1">분석형 (Melancholy)</h4>
+            <p class="text-slate-500 text-sm leading-relaxed">체계적이고 데이터 중심적인 타입. 철저한 분석과 완벽한 설계를 추구합니다.</p>
+          </div>
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition duration-300">
+            <div class="w-12 h-12 rounded-xl bg-acceptType-light text-acceptType flex items-center justify-center mb-4 font-bold text-lg">D</div>
+            <h4 class="text-lg font-bold text-slate-900 mb-1">수용형 (Phlegmatic)</h4>
+            <p class="text-slate-500 text-sm leading-relaxed">신중하고 배려가 넘치는 타입. 조직 전체의 조화와 안전한 신뢰 관계를 지향합니다.</p>
+          </div>
+        </div>
+
+        <!-- User Registration & Start Card -->
+        <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 max-w-xl mx-auto space-y-6">
+          <h3 class="text-xl font-bold text-slate-900 text-center">진단 전 이름을 입력해 주세요</h3>
+          <div class="space-y-2">
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">진단자 이름</label>
+            <input type="text" v-model="userName" placeholder="예: 홍길동 (부서명)" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium">
+          </div>
+          <button @click="startAssessment" class="w-full bg-gradient-to-r from-indigo-600 to-indigo-500 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-indigo-100 hover:from-indigo-700 hover:to-indigo-600 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+            성향 분석 시작하기
+            <i data-lucide="arrow-right" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </section>
+
+      <!-- VIEW 2: Active Test Questionnaire Screen -->
+      <section v-if="activeView === 'test'" class="max-w-3xl mx-auto space-y-8">
+        
+        <!-- Header Progress Indicator -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="space-y-1">
+              <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">
+                {{ currentQuestionIndex < 20 ? 'PART 1: 강점 및 긍정 성향' : 'PART 2: 극복 및 스트레스 성향' }}
+              </span>
+              <h3 class="text-lg font-bold text-slate-900">
+                질문 {{ currentQuestionIndex + 1 }} / 40
+              </h3>
+            </div>
+            <div class="text-right">
+              <span class="text-sm font-semibold text-indigo-600">{{ Math.round((currentQuestionIndex / 40) * 100) }}% 완료</span>
+            </div>
+          </div>
+          <!-- Progress Bar -->
+          <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+            <div class="bg-indigo-600 h-full rounded-full transition-all duration-300" :style="{ width: ((currentQuestionIndex / 40) * 100) + '%' }"></div>
+          </div>
+        </div>
+
+        <!-- Question Card -->
+        <div class="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm space-y-8">
+          <div class="text-center space-y-2">
+            <p class="text-slate-500 text-sm font-medium">나를 가장 잘 묘사하는 어휘를 하나만 골라주세요.</p>
+            <h2 class="text-2xl font-extrabold text-slate-900">당신의 성향에 가장 가까운 것은?</h2>
+          </div>
+
+          <!-- Selection Options -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <!-- Type A Option -->
+            <button @click="selectAnswer('A')" class="group text-left p-5 rounded-2xl border-2 border-slate-100 hover:border-activeType hover:bg-amber-50/30 transition-all duration-200 flex items-start gap-4">
+              <span class="w-8 h-8 rounded-xl bg-slate-100 group-hover:bg-activeType-light group-hover:text-activeType text-slate-600 font-bold flex items-center justify-center transition-all">A</span>
+              <div>
+                <p class="font-bold text-slate-900 group-hover:text-activeType-dark text-lg">{{ currentQuestion.A }}</p>
+                <p class="text-xs text-slate-400 mt-1">사교 및 개방적 반응 유형</p>
+              </div>
+            </button>
+
+            <!-- Type B Option -->
+            <button @click="selectAnswer('B')" class="group text-left p-5 rounded-2xl border-2 border-slate-100 hover:border-judoType hover:bg-red-50/30 transition-all duration-200 flex items-start gap-4">
+              <span class="w-8 h-8 rounded-xl bg-slate-100 group-hover:bg-judoType-light group-hover:text-judoType text-slate-600 font-bold flex items-center justify-center transition-all">B</span>
+              <div>
+                <p class="font-bold text-slate-900 group-hover:text-judoType-dark text-lg">{{ currentQuestion.B }}</p>
+                <p class="text-xs text-slate-400 mt-1">목표 및 실행 주도 반응 유형</p>
+              </div>
+            </button>
+
+            <!-- Type C Option -->
+            <button @click="selectAnswer('C')" class="group text-left p-5 rounded-2xl border-2 border-slate-100 hover:border-analysisType hover:bg-blue-50/30 transition-all duration-200 flex items-start gap-4">
+              <span class="w-8 h-8 rounded-xl bg-slate-100 group-hover:bg-analysisType-light group-hover:text-analysisType text-slate-600 font-bold flex items-center justify-center transition-all">C</span>
+              <div>
+                <p class="font-bold text-slate-900 group-hover:text-analysisType-dark text-lg">{{ currentQuestion.C }}</p>
+                <p class="text-xs text-slate-400 mt-1">데이터 및 논리 분석 반응 유형</p>
+              </div>
+            </button>
+
+            <!-- Type D Option -->
+            <button @click="selectAnswer('D')" class="group text-left p-5 rounded-2xl border-2 border-slate-100 hover:border-acceptType hover:bg-emerald-50/30 transition-all duration-200 flex items-start gap-4">
+              <span class="w-8 h-8 rounded-xl bg-slate-100 group-hover:bg-acceptType-light group-hover:text-acceptType text-slate-600 font-bold flex items-center justify-center transition-all">D</span>
+              <div>
+                <p class="font-bold text-slate-900 group-hover:text-acceptType-dark text-lg">{{ currentQuestion.D }}</p>
+                <p class="text-xs text-slate-400 mt-1">상호 조화 및 신뢰 수용 반응 유형</p>
+              </div>
+            </button>
+
+          </div>
+        </div>
+
+        <!-- Footer Control Buttons -->
+        <div class="flex items-center justify-between">
+          <button @click="prevQuestion" :disabled="currentQuestionIndex === 0" class="flex items-center gap-2 px-5 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold hover:bg-slate-50 transition-all disabled:opacity-40 disabled:pointer-events-none">
+            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+            이전으로
+          </button>
+          
+          <button @click="resetTest" class="text-slate-400 hover:text-rose-500 font-semibold text-sm transition-all">
+            처음부터 다시하기
+          </button>
+        </div>
+      </section>
+
+      <!-- VIEW 3: Personal Assessment Results Screen -->
+      <section v-if="activeView === 'result'" class="space-y-10 max-w-5xl mx-auto">
+        
+        <!-- Result Splash Card -->
+        <div class="bg-gradient-to-tr from-indigo-900 via-indigo-800 to-indigo-950 rounded-3xl p-8 md:p-12 text-white shadow-xl relative overflow-hidden">
+          <div class="relative z-10 space-y-6">
+            <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full border border-white/20">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span class="text-xs font-bold tracking-wider">진단 결과 보고서</span>
+            </div>
+            
+            <div class="space-y-2">
+              <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
+                {{ userName }}님은 <span class="text-amber-400 underline decoration-wavy decoration-indigo-400">{{ resultAnalysis.primaryType }}</span>입니다!
+              </h1>
+              <p class="text-indigo-200 text-lg md:text-xl font-medium max-w-2xl">
+                부성향으로는 <span class="font-bold text-white">{{ resultAnalysis.secondaryType }}</span>을 보유하고 계십니다.
+              </p>
+            </div>
+
+            <!-- Badges List -->
+            <div class="flex flex-wrap gap-2 pt-2">
+              <span class="px-3 py-1 bg-white/10 rounded-lg text-xs font-medium text-indigo-100">#{{ resultAnalysis.primaryType }}</span>
+              <span class="px-3 py-1 bg-white/10 rounded-lg text-xs font-medium text-indigo-100">#{{ resultAnalysis.secondaryType }} 조합</span>
+              <span class="px-3 py-1 bg-white/10 rounded-lg text-xs font-medium text-indigo-100">#협업마스터</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Core Analysis Breakdown Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+          
+          <!-- Column 1: Radar Chart (5/12 cols) -->
+          <div class="lg:col-span-5 bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between space-y-6">
+            <div>
+              <h3 class="text-lg font-bold text-slate-900 mb-1">성향 백분율 분포</h3>
+              <p class="text-slate-400 text-xs">A, B, C, D 네 가지 속성의 균형도를 시각화합니다.</p>
+            </div>
+            
+            <div class="relative flex-grow flex items-center justify-center max-h-[300px]">
+              <!-- Bulletproof Chart Canvas Element -->
+              <canvas id="resultRadarChart"></canvas>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
+              <div class="p-3 bg-amber-50/40 rounded-xl border border-amber-100 text-center">
+                <p class="text-[10px] font-bold text-amber-600">활발형 (A)</p>
+                <p class="text-xl font-extrabold text-amber-700">{{ scorePercentage.A }}%</p>
+              </div>
+              <div class="p-3 bg-red-50/40 rounded-xl border border-red-100 text-center">
+                <p class="text-[10px] font-bold text-red-600">주도형 (B)</p>
+                <p class="text-xl font-extrabold text-red-700">{{ scorePercentage.B }}%</p>
+              </div>
+              <div class="p-3 bg-blue-50/40 rounded-xl border border-blue-100 text-center">
+                <p class="text-[10px] font-bold text-blue-600">분석형 (C)</p>
+                <p class="text-xl font-extrabold text-blue-700">{{ scorePercentage.C }}%</p>
+              </div>
+              <div class="p-3 bg-emerald-50/40 rounded-xl border border-emerald-100 text-center">
+                <p class="text-[10px] font-bold text-emerald-600">수용형 (D)</p>
+                <p class="text-xl font-extrabold text-emerald-700">{{ scorePercentage.D }}%</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: Detailed Text Report (7/12 cols) -->
+          <div class="lg:col-span-7 bg-white rounded-3xl p-8 border border-slate-100 shadow-sm space-y-8">
+            <div class="space-y-4">
+              <h3 class="text-xl font-extrabold text-slate-900 pb-3 border-b border-slate-100 flex items-center gap-2">
+                <span class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg"><i data-lucide="award" class="w-5 h-5"></i></span>
+                나의 주성향: {{ resultAnalysis.primaryType }} 특징
+              </h3>
+              <p class="text-slate-600 text-sm leading-relaxed whitespace-pre-line">
+                {{ resultAnalysis.description }}
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="p-5 bg-indigo-50/30 border border-indigo-100/50 rounded-2xl space-y-2">
+                <h4 class="font-bold text-indigo-900 text-sm flex items-center gap-1.5">
+                  <i data-lucide="check-circle" class="w-4 h-4 text-indigo-600"></i>
+                  강점 및 장점
+                </h4>
+                <ul class="text-xs text-slate-600 space-y-1.5">
+                  <li v-for="item in resultAnalysis.strengths" class="flex items-start gap-1">
+                    <span class="text-indigo-500">•</span> {{ item }}
+                  </li>
+                </ul>
+              </div>
+
+              <div class="p-5 bg-slate-50 border border-slate-100 rounded-2xl space-y-2">
+                <h4 class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                  <i data-lucide="help-circle" class="w-4 h-4 text-slate-500"></i>
+                  협업 시 보완점
+                </h4>
+                <ul class="text-xs text-slate-600 space-y-1.5">
+                  <li v-for="item in resultAnalysis.weaknesses" class="flex items-start gap-1">
+                    <span class="text-slate-400">•</span> {{ item }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Collaboration Advice Card -->
+            <div class="p-6 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl space-y-2">
+              <h4 class="font-bold text-amber-400 text-sm flex items-center gap-1.5">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                팀원들이 나와 협업할 때 주는 조언
+              </h4>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                {{ resultAnalysis.collaborationAdvice }}
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Navigation Actions -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 p-6 bg-slate-100 rounded-2xl">
+          <div class="text-center sm:text-left">
+            <h4 class="font-bold text-slate-900 text-sm">진단 결과를 보드에 등록했습니다!</h4>
+            <p class="text-xs text-slate-500">전체 팀의 종합 맵과 시너지 조언을 바로 열람해 보세요.</p>
+          </div>
+          <div class="flex gap-2 w-full sm:w-auto">
+            <button @click="viewTeamBoard" class="flex-grow sm:flex-none justify-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md flex items-center gap-2 transition-all">
+              <i data-lucide="users" class="w-4 h-4"></i>
+              팀 대시보드 보기
+            </button>
+            <button @click="resetTest" class="flex-grow sm:flex-none justify-center px-6 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all">
+              재시험 치르기
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- VIEW 4: Interactive Team Dashboard & Sync Board -->
+      <section v-if="activeView === 'team'" class="space-y-10 max-w-6xl mx-auto">
+        
+        <!-- Header Introduction to Team Dashboard -->
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+          <div>
+            <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">팀 종합 시너지 보드</h2>
+            <p class="text-slate-500 text-sm mt-1">우리 팀원들의 4가지 성향 분포와 최적의 파트너 매칭 상태를 시각화합니다.</p>
+          </div>
+          <button @click="copyShareLink" class="w-full md:w-auto px-5 py-2.5 bg-white border border-indigo-200 hover:border-indigo-500 text-indigo-700 font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2">
+            <i data-lucide="share-2" class="w-4 h-4"></i>
+            동료에게 진단 공유하기
+          </button>
+        </div>
+
+        <!-- Dashboard Widgets Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+          
+          <!-- Left Widget: Team 2D Quadrant Map (7/12 cols) -->
+          <div class="lg:col-span-7 bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between space-y-6">
+            <div>
+              <h3 class="text-lg font-bold text-slate-900 mb-1">우리 팀 시너지 성향 매핑</h3>
+              <p class="text-slate-400 text-xs">수직축(일 중심 vs 관계 중심), 수평축(신중/수동 vs 즉각/적극)에 따른 매핑입니다.</p>
+            </div>
+
+            <!-- Interactive 2D Canvas Mapping Matrix -->
+            <div class="relative bg-slate-50 rounded-2xl border border-slate-100 p-4 aspect-square max-h-[420px] flex items-center justify-center overflow-hidden">
+              <!-- Quadrant lines & labels -->
+              <div class="absolute inset-0 grid grid-cols-2 grid-rows-2">
+                <div class="border-r border-b border-slate-200/80 flex items-start justify-start p-4 bg-red-50/10">
+                  <span class="text-[10px] font-bold text-slate-400">일 중심 + 적극 (주도형 영역)</span>
+                </div>
+                <div class="border-b border-slate-200/80 flex items-start justify-end p-4 bg-amber-50/10">
+                  <span class="text-[10px] font-bold text-slate-400">(활발형 영역) 관계 중심 + 적극</span>
+                </div>
+                <div class="border-r border-slate-200/80 flex items-end justify-start p-4 bg-blue-50/10">
+                  <span class="text-[10px] font-bold text-slate-400">일 중심 + 신중 (분석형 영역)</span>
+                </div>
+                <div class="flex items-end justify-end p-4 bg-emerald-50/10">
+                  <span class="text-[10px] font-bold text-slate-400">(수용형 영역) 관계 중심 + 신중</span>
+                </div>
+              </div>
+
+              <!-- Coordinate Axes Titles -->
+              <div class="absolute top-2 left-1/2 -translate-x-1/2 bg-white px-2.5 py-0.5 border border-slate-200 rounded-full text-[9px] font-bold text-slate-500 uppercase tracking-wider z-10">
+                과업 지향 (Task)
+              </div>
+              <div class="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white px-2.5 py-0.5 border border-slate-200 rounded-full text-[9px] font-bold text-slate-500 uppercase tracking-wider z-10">
+                관계 지향 (People)
+              </div>
+              <div class="absolute left-2 top-1/2 -translate-y-1/2 bg-white px-2.5 py-0.5 border border-slate-200 rounded-full text-[9px] font-bold text-slate-500 uppercase tracking-wider z-10 rotate-90">
+                정밀/관찰
+              </div>
+              <div class="absolute right-2 top-1/2 -translate-y-1/2 bg-white px-2.5 py-0.5 border border-slate-200 rounded-full text-[9px] font-bold text-slate-500 uppercase tracking-wider z-10 -rotate-90">
+                행동/직관
+              </div>
+
+              <!-- Plotting dots for active team members -->
+              <div class="absolute inset-0" id="matrixContainer">
+                <div v-for="member in teamMembers" 
+                     :key="member.id"
+                     class="absolute group cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition-all duration-500 hover:scale-125 z-20"
+                     :style="{ left: calculateXCoordinate(member) + '%', top: calculateYCoordinate(member) + '%' }">
+                  
+                  <!-- Member Pin dot -->
+                  <div class="w-8 h-8 rounded-full border-2 border-white shadow-md flex items-center justify-center text-xs font-bold text-white transition-all"
+                       :class="getPersonalityColorClass(member.primaryType)">
+                    {{ member.userName ? member.userName.charAt(0) : 'T' }}
+                  </div>
+
+                  <!-- Name tag on hover -->
+                  <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 whitespace-nowrap bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none">
+                    {{ member.userName }} ({{ member.primaryType }})
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quadrant Color Legend -->
+            <div class="flex items-center justify-center gap-4 text-xs font-semibold pt-4 border-t border-slate-100 flex-wrap">
+              <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-activeType"></span> 활발형</span>
+              <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-judoType"></span> 주도형</span>
+              <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-analysisType"></span> 분석형</span>
+              <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-acceptType"></span> 수용형</span>
+            </div>
+          </div>
+
+          <!-- Right Widget: Team List and Management (5/12 cols) -->
+          <div class="lg:col-span-5 bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between space-y-6">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <h3 class="text-lg font-bold text-slate-900">참여 팀원 목록</h3>
+                <span class="px-2.5 py-0.5 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full">총 {{ teamMembers.length }}명</span>
+              </div>
+              <p class="text-slate-400 text-xs">팀원을 클릭하여 프로필 상세를 확인해 보세요.</p>
+            </div>
+
+            <!-- Dynamic Team Members Scroll Area -->
+            <div class="flex-grow overflow-y-auto max-h-[280px] space-y-2.5 pr-1 custom-scrollbar">
+              <div v-for="member in teamMembers" 
+                   :key="member.id"
+                   class="p-4 rounded-2xl border border-slate-100 hover:border-indigo-100 hover:bg-slate-50/50 cursor-pointer transition-all flex items-center justify-between"
+                   @click="selectTeamMember(member)">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-sm text-white"
+                       :class="getPersonalityColorClass(member.primaryType)">
+                    {{ member.userName ? member.userName.charAt(0) : 'T' }}
+                  </div>
+                  <div>
+                    <h5 class="font-bold text-slate-800 text-sm">{{ member.userName }}</h5>
+                    <p class="text-xs text-slate-400">주성향: {{ member.primaryType }}</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[10px] font-bold">
+                    {{ member.primaryType.substring(0, 2) }}
+                  </span>
+                  <button @click.stop="deleteMemberData(member.id)" class="p-1 hover:text-rose-500 rounded text-slate-300 transition-colors">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Empty state message -->
+              <div v-if="teamMembers.length === 0" class="py-12 text-center text-slate-400 space-y-2">
+                <i data-lucide="users" class="w-8 h-8 mx-auto text-slate-300"></i>
+                <p class="text-xs">등록된 팀원이 없습니다. 첫 등록자가 되어보세요!</p>
+              </div>
+            </div>
+
+            <!-- Dynamic Selected User Detail Info Card -->
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+              <div class="flex items-center justify-between" v-if="selectedMember">
+                <h5 class="font-bold text-slate-900 text-xs">선택된 정보: {{ selectedMember.userName }}님</h5>
+                <span class="text-[10px] font-extrabold text-indigo-600">성향: {{ selectedMember.primaryType }}</span>
+              </div>
+              <p class="text-[11px] text-slate-500 leading-relaxed" v-if="selectedMember">
+                "이 팀원은 {{ getPersonalityInsight(selectedMember.primaryType) }}"
+              </p>
+              <p class="text-[11px] text-slate-400 text-center italic py-2" v-else>
+                목록에서 팀원을 클릭하여 상세 코멘트를 살펴보세요.
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Synergy Matrix Advisory Card -->
+        <div class="bg-indigo-950 text-white rounded-3xl p-8 md:p-12 shadow-xl space-y-8 relative overflow-hidden">
+          <div class="relative z-10 space-y-6">
+            <h3 class="text-2xl font-extrabold flex items-center gap-2">
+              <span class="p-2 bg-white/10 rounded-xl text-indigo-300"><i data-lucide="sparkles" class="w-5 h-5"></i></span>
+              우리 팀의 협업 시너지 리포트
+            </h3>
+            
+            <p class="text-indigo-200 text-sm leading-relaxed max-w-4xl">
+              현재 참여한 데이터를 기반으로, 우리 팀은 
+              <span class="text-amber-400 font-bold underline">{{ calculateDominantType() }}</span> 성향이 우세한 상태입니다. 
+              목표 달성 능력을 극대화하기 위해 아래와 같은 협업 전술을 취해 보세요.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+              <div class="p-5 bg-white/5 rounded-2xl border border-white/10 space-y-2">
+                <span class="text-xs font-extrabold text-amber-400 uppercase tracking-wider block">소통 전술</span>
+                <p class="text-xs text-indigo-100 leading-relaxed">
+                  활발형의 열린 소통과 분석형의 신중한 팩트 체크가 조화를 이루도록 회의를 두 단계(아이디어 확장 - 논리 필터링)로 진행하세요.
+                </p>
+              </div>
+
+              <div class="p-5 bg-white/5 rounded-2xl border border-white/10 space-y-2">
+                <span class="text-xs font-extrabold text-emerald-400 uppercase tracking-wider block">의사결정 최적화</span>
+                <p class="text-xs text-indigo-100 leading-relaxed">
+                  주도형이 리드할 때 수용형과 분석형의 의견을 정기적으로 수렴하는 안전 점검 프로세스를 도입하면 실행 실패율을 크게 낮출 수 있습니다.
+                </p>
+              </div>
+
+              <div class="p-5 bg-white/5 rounded-2xl border border-white/10 space-y-2">
+                <span class="text-xs font-extrabold text-indigo-400 uppercase tracking-wider block">피해야 할 마찰</span>
+                <p class="text-xs text-indigo-100 leading-relaxed">
+                  약점 평가 어휘(21~40)를 토대로 구성원의 컨디션 저하 시 서로 예민해질 수 있는 포인트를 존중하고 감성적인 지지 기반을 나누는 것이 필요합니다.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- Global Footer layout -->
+    <footer class="bg-white border-t border-slate-200 py-8 mt-12 text-center text-slate-400 text-xs">
+      <div class="max-w-7xl mx-auto px-4 space-y-2">
+        <p class="font-medium text-slate-500">© 2026 TeamFlow. 성향 진단 & 시너지 보드 플랫폼.</p>
+        <p>어휘 기준 출처: 성향테스트(1).jpg, 성향테스트(2).jpeg, 성향테스트(3).jpeg</p>
+      </div>
+    </footer>
+
+    <!-- Custom Dialog / Notification Toast -->
+    <div v-if="toastMessage" class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-xs font-semibold animate-bounce">
+      <i data-lucide="info" class="w-4 h-4 text-indigo-400"></i>
+      {{ toastMessage }}
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { createApp, ref, computed, onMounted, nextTick } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
+    
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // App variables
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'team-disc-assessment';
+    let db = null;
+    let auth = null;
+    let isFirebaseActive = false;
+
+    // Try firebase parsing
+    let firebaseConfig = null;
+    try {
+      if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+        firebaseConfig = JSON.parse(__firebase_config);
+      }
+    } catch (e) {
+      console.warn("Firebase config parse error, using memory storage fallback:", e);
+    }
+
+    if (firebaseConfig && firebaseConfig.apiKey) {
+      try {
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+        isFirebaseActive = true;
+      } catch (e) {
+        console.error("Firebase auth/firestore error:", e);
+      }
+    }
+
+    // Vue Core App Initialization
+    createApp({
+      setup() {
+        const activeView = ref('intro');
+        const userName = ref('');
+        const currentQuestionIndex = ref(0);
+        const answers = ref({}); // Index to Chosen key ('A', 'B', 'C', 'D')
+        const teamMembers = ref([]);
+        const toastMessage = ref('');
+        const selectedMember = ref(null);
+        let activeChart = null;
+
+        // 40 Criteria Mapping from 성향테스트(1).jpg, 성향테스트(2).jpeg, 성향테스트(3).jpeg
+        const questions = [
+          // Strengths 1~20 (A=활발, B=주도, C=분석, D=수용)
+          { id: 1, A: '활발함', B: '모험적', C: '분석적', D: '편히 어울림' },
+          { id: 2, A: '쾌활함', B: '설득력', C: '의지 강함', D: '조용함' },
+          { id: 3, A: '사교적', B: '자기 의지 강함', C: '자기 희생적', D: '쉽게 순응' },
+          { id: 4, A: '매력있는', B: '경쟁적임', C: '사려 깊음', D: '감정 억제' },
+          { id: 5, A: '새로운 생각', B: '뛰어난 능력', C: '남을 존중하는', D: '표현을 삼가는' },
+          { id: 6, A: '활발함', B: '독자적인', C: '민감함', D: '쉽게 수용함' },
+          { id: 7, A: '남에게 장려함', B: '적극적', C: '계획하는', D: '참을성이 많은' },
+          { id: 8, A: '충동적', B: '자신감', C: '체계적', D: '과묵함' },
+          { id: 9, A: '낙천적', B: '솔직함', C: '질서 정연', D: '자상함' },
+          { id: 10, A: '익살스런움', B: '주관이 뚜렷', C: '성실함', D: '친절함' },
+          { id: 11, A: '유쾌함', B: '겁이 없는', C: '세심함', D: '싹싹함' },
+          { id: 12, A: '쾌활함', B: '확신에 참', C: '점잖음', D: '안정됨' },
+          { id: 13, A: '격려하고, 기쁨 주는', B: '독립심', C: '이상 추구', D: '유순함' },
+          { id: 14, A: '표현/스킨십 즐김', B: '결단력', C: '몰두함', D: '천연덕스런' },
+          { id: 15, A: '쉽게 어울림', B: '의견 제안 잘함', C: '음악 좋아하는', D: '중재자' },
+          { id: 16, A: '말 많이 함', B: '성취하는', C: '신중함', D: '관대한' },
+          { id: 17, A: '열정적', B: '책임지는', C: '충성스러운', D: '듣기 잘함' },
+          { id: 18, A: '무대형', B: '지도력 있는', C: '조직적인', D: '만족 잘함' },
+          { id: 19, A: '인기 좋음', B: '생산적', C: '완벽 추구', D: '남을 편안케 함' },
+          { id: 20, A: '활기참', B: '과감함', C: '예의 바름', D: '균형 잡힘' },
+
+          // Weaknesses 21~40 (A=활발, B=주도, C=분석, D=수용)
+          { id: 21, A: '뻔뻔스러움', B: '남을 압도', C: '수줍어함', D: '무표정함' },
+          { id: 22, A: '질서가 없는', B: '냉정함', C: '용서 잘 안함', D: '열정 없음' },
+          { id: 23, A: '한 말 또 함', B: '주장하고 맞섬', C: '감정이 오래감', D: '마지못해 함' },
+          { id: 24, A: '잘 잊음', B: '솔직함', C: '까다로운', D: '두려워함' },
+          { id: 25, A: '끼어들기', B: '참을성 없음', C: '불인정', D: '우유부단함' },
+          { id: 26, A: '예측 불허', B: '애정 표현 없음', C: '인기 없음', D: '끼어들지 못함' },
+          { id: 27, A: '되는 대로 하는', B: '완고함', C: '쉽게 만족 못하는', D: '주저함' },
+          { id: 28, A: '싫어할까봐 맞추는', B: '자존심이 강함', C: '비관적', D: '평범함' },
+          { id: 29, A: '쉽게 성냄', B: '논쟁을 좋아하는', C: '소외감을 느끼는', D: '목표 없음' },
+          { id: 30, A: '단순함', B: '자만하는', C: '부정적 태도', D: '감정표현이 없는' },
+          { id: 31, A: '공치사 잘함', B: '일중독', C: '내향적', D: '근심 많음' },
+          { id: 32, A: '말 많음', B: '무뚝뚝함', C: '예민함', D: '소심함' },
+          { id: 33, A: '무질서함', B: '지배적임', C: '낙심 잘함', D: '결단력 약함' },
+          { id: 34, A: '일관성 없음', B: '관대하지 못함', C: '내성적임', D: '결과에 무관심' },
+          { id: 35, A: '어지르는', B: '남 이용 잘함', C: '쉽게 우울', D: '불평 잘함' },
+          { id: 36, A: '과시적', B: '고집 셈', C: '회의적', D: '느림' },
+          { id: 37, A: '목소리가 큼', B: '주장하는', C: '고독 즐김', D: '게으름' },
+          { id: 38, A: '침착치 못함', B: '성미 급함', C: '의심 많음', D: '행동 느림' },
+          { id: 39, A: '쉽게 지겨워함', B: '신중치 못함', C: '복수심 강함', D: '억지로 함' },
+          { id: 40, A: '변화무쌍', B: '약삭 빠름', C: '비판적', D: '타협적' }
+        ];
+
+        // 5 Simulated Mock team members to keep team view active and lively
+        const mockMembers = [
+          { id: 'mock-1', userName: '박서현 팀장', score: { A: 6, B: 21, C: 8, D: 5 }, primaryType: '주도형', secondaryType: '분석형' },
+          { id: 'mock-2', userName: '김진수 선임', score: { A: 19, B: 6, C: 11, D: 4 }, primaryType: '활발형', secondaryType: '분석형' },
+          { id: 'mock-3', userName: '정다운 대리', score: { A: 4, B: 5, C: 12, D: 19 }, primaryType: '수용형', secondaryType: '분석형' },
+          { id: 'mock-4', userName: '이민형 연구원', score: { A: 5, B: 10, C: 20, D: 5 }, primaryType: '분석형', secondaryType: '주도형' },
+          { id: 'mock-5', userName: '최지예 기획자', score: { A: 17, B: 7, C: 6, D: 10 }, primaryType: '활발형', secondaryType: '수용형' }
+        ];
+
+        // Dynamic Calculations
+        const currentQuestion = computed(() => questions[currentQuestionIndex.value]);
+
+        const scoreCounts = computed(() => {
+          const counts = { A: 0, B: 0, C: 0, D: 0 };
+          Object.values(answers.value).forEach(val => {
+            if (counts[val] !== undefined) counts[val]++;
+          });
+          return counts;
+        });
+
+        const scorePercentage = computed(() => {
+          const total = Math.max(Object.keys(answers.value).length, 1);
+          return {
+            A: Math.round((scoreCounts.value.A / total) * 100),
+            B: Math.round((scoreCounts.value.B / total) * 100),
+            C: Math.round((scoreCounts.value.C / total) * 100),
+            D: Math.round((scoreCounts.value.D / total) * 100)
+          };
+        });
+
+        // Determine profile description based on primary/secondary results
+        const resultAnalysis = computed(() => {
+          const sorted = Object.entries(scoreCounts.value).sort((a, b) => b[1] - a[1]);
+          const primaryKey = sorted[0][0];
+          const secondaryKey = sorted[1][0];
+
+          const nameMap = { A: '활발형', B: '주도형', C: '분석형', D: '수용형' };
+          const pName = nameMap[primaryKey];
+          const sName = nameMap[secondaryKey];
+
+          const detailDatabase = {
+            '활발형': {
+              description: '활동적이고 쾌활하며 풍부한 대인 상호관계를 선호합니다. 직관적이고 감정표현이 뛰어나서 조직 전체에 유쾌한 활력과 영감을 공급하는 최고의 분위기 메이커 역할을 담당합니다.',
+              strengths: ['열정적인 사교적 네트워크 구축', '순발력 넘치는 즉흥 아이디어 제안', '팀 내 긍정적 에너지 전파 및 팀워크 형성'],
+              weaknesses: ['장기적 마일스톤에 대한 실행 및 마무리 부족', '팩트 검증 단계를 건너뛰는 충동성', '불편한 대립 및 비판적 논평 회피 성향'],
+              collaborationAdvice: '아이디어 발산 단계에서 최고이지만, 결정 후 문서를 꼼꼼하게 정리하고 데이터 타당성을 점검할 보조 파트너가 반드시 필요합니다.'
+            },
+            '주도형': {
+              description: '과업 중심적이고 대담하며 목표 지향적인 전략가입니다. 높은 의지와 결단력을 가졌으며, 장애물에 직면하더라도 결정을 과감하게 내려서 돌파해내는 개척자 역할을 이행합니다.',
+              strengths: ['빠르고 단호한 업무 처리 및 주도성', '위기 상황에서의 과감한 책임 및 수용', '명확한 목표 의식과 솔직한 의견 개진'],
+              weaknesses: ['상대방에 대한 공감 능력 결여로 독단적인 추진 가능성', '과정이나 규칙보다 속도와 결과만 집중', '세밀하고 차분한 세부 조율 부재'],
+              collaborationAdvice: '결과 창출을 위해 팀원들을 강하게 압도하기 쉬우니, 다른 팀원의 속도와 배려 섞인 의견에도 먼저 귀를 기울이는 대기 단계를 유지해 보세요.'
+            },
+            '분석형': {
+              description: '정밀하고 논리적인 사고를 통해 가장 완벽한 해답을 찾아내는 설계자입니다. 체계적인 검토와 팩트 데이터를 중시하며, 실수를 용납하지 않고 고품질 결과물을 유지합니다.',
+              strengths: ['오차 없는 고밀도 계획 수립 및 디테일 감수', '분석적이고 공정한 평가', '질서 정연한 데이터 및 체계적 문서화'],
+              weaknesses: ['지나친 완벽 추구로 인한 의사결정 지연', '비판적이고 다소 차가운 커뮤니케이션 스타일', '유연한 상황 적응 부족 및 스트레스 수치'],
+              collaborationAdvice: '안전성 확보는 탁월하나, 불확실성이 높은 초기 단계에서는 "빠른 완성이 불완전한 완벽함보다 나을 수 있다"는 접근법이 필요합니다.'
+            },
+            '수용형': {
+              description: '경청을 가장 잘하며 구성원들이 안정적으로 화합하게 돕는 조력자입니다. 일의 프로세스만큼 신뢰와 조화로운 분위기를 지향하며, 꾸준하고 묵묵하게 신용을 구축합니다.',
+              strengths: ['온화하고 공감대 높은 팀 지원 협업', '변덕 없이 묵묵히 지원을 실현', '구성원 간의 대립을 완충하는 포용성'],
+              weaknesses: ['갈등에 처했을 때 본인의 주장을 드러내지 못함', '주도적 기획 능력 저하', '급격한 변화나 과격한 마감에 대한 불안'],
+              collaborationAdvice: '지나치게 양보하여 스트레스를 혼자 감수하곤 하니, 프로젝트 초반에는 자신의 원칙과 주장을 명확하게 언어로 통보하는 연습이 필요합니다.'
+            }
+          };
+
+          return {
+            primaryType: pName,
+            secondaryType: sName,
+            description: detailDatabase[pName]?.description || '',
+            strengths: detailDatabase[pName]?.strengths || [],
+            weaknesses: detailDatabase[pName]?.weaknesses || [],
+            collaborationAdvice: detailDatabase[pName]?.collaborationAdvice || ''
+          };
+        });
+
+        // Setup Event Listeners and Initial Load
+        onMounted(() => {
+          showToast("플랫폼이 성공적으로 구동되었습니다.");
+          // Initialize Lucide icon library
+          if (window.lucide) {
+            window.lucide.createIcons();
+          }
+          fetchTeamResults();
+        });
+
+        function goHome() {
+          activeView.value = 'intro';
+          nextTick(() => {
+            if (window.lucide) window.lucide.createIcons();
+          });
+        }
+
+        function startAssessment() {
+          if (!userName.value.trim()) {
+            showToast("진단 시작을 위해 먼저 이름을 입력해 주세요.");
+            return;
+          }
+          answers.value = {};
+          currentQuestionIndex.value = 0;
+          activeView.value = 'test';
+        }
+
+        function selectAnswer(type) {
+          answers.value[currentQuestionIndex.value] = type;
+          if (currentQuestionIndex.value < 39) {
+            currentQuestionIndex.value++;
+          } else {
+            submitTest();
+          }
+        }
+
+        function prevQuestion() {
+          if (currentQuestionIndex.value > 0) {
+            currentQuestionIndex.value--;
+          }
+        }
+
+        function resetTest() {
+          answers.value = {};
+          currentQuestionIndex.value = 0;
+          activeView.value = 'intro';
+          nextTick(() => {
+            if (window.lucide) window.lucide.createIcons();
+          });
+        }
+
+        function submitTest() {
+          // Record to platform
+          const finalScore = { ...scoreCounts.value };
+          const pType = resultAnalysis.value.primaryType;
+          const sType = resultAnalysis.value.secondaryType;
+
+          const submissionData = {
+            id: 'res-' + Date.now(),
+            userName: userName.value,
+            score: finalScore,
+            primaryType: pType,
+            secondaryType: sType,
+            timestamp: new Date().toISOString()
+          };
+
+          // Save to Local/Firebase
+          saveMemberResult(submissionData);
+
+          activeView.value = 'result';
+          showToast("성향 진단이 완료되었습니다!");
+
+          // Render Chart asynchronously on the next tick
+          nextTick(() => {
+            renderRadarChart();
+            if (window.lucide) window.lucide.createIcons();
+          });
+        }
+
+        function renderRadarChart() {
+          try {
+            const ctx = document.getElementById('resultRadarChart');
+            if (!ctx) return;
+
+            // Destroy existing chart if active to clear memory
+            if (activeChart) {
+              activeChart.destroy();
+            }
+
+            const data = {
+              labels: ['활발형 (A)', '주도형 (B)', '분석형 (C)', '수용형 (D)'],
+              datasets: [{
+                label: '내 성향 분포도 (%)',
+                data: [
+                  scorePercentage.value.A,
+                  scorePercentage.value.B,
+                  scorePercentage.value.C,
+                  scorePercentage.value.D
+                ],
+                backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                borderColor: 'rgb(99, 102, 241)',
+                borderWidth: 2,
+                pointBackgroundColor: 'rgb(99, 102, 241)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgb(99, 102, 241)'
+              }]
+            };
+
+            const config = {
+              type: 'radar',
+              data: data,
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  r: {
+                    angleLines: { display: true },
+                    suggestedMin: 0,
+                    suggestedMax: 100
+                  }
+                },
+                plugins: {
+                  legend: { display: false }
+                }
+              }
+            };
+
+            activeChart = new Chart(ctx, config);
+          } catch (e) {
+            console.error("Chart.js rendering failed:", e);
+          }
+        }
+
+        function saveMemberResult(data) {
+          // Store locally in-memory array first
+          teamMembers.value.push(data);
+
+          // Save to browser LocalStorage for session persistence
+          try {
+            let localStore = JSON.parse(localStorage.getItem('team_assessment_data') || '[]');
+            localStore.push(data);
+            localStorage.setItem('team_assessment_data', JSON.stringify(localStore));
+          } catch (e) {
+            console.error("Local storage saving failed:", e);
+          }
+
+          // If Firestore is live, save to cloud
+          if (isFirebaseActive && db) {
+            const publicDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'assessments', data.id);
+            setDoc(publicDocRef, data)
+              .then(() => console.log("Cloud sync completed."))
+              .catch(e => console.warn("Firestore save failed, used local mode:", e));
+          }
+        }
+
+        function fetchTeamResults() {
+          // 1. Gather mock members for beautiful empty state
+          let unifiedList = [...mockMembers];
+
+          // 2. Gather LocalStorage results
+          try {
+            const localStore = JSON.parse(localStorage.getItem('team_assessment_data') || '[]');
+            localStore.forEach(item => {
+              if (!unifiedList.some(member => member.id === item.id)) {
+                unifiedList.push(item);
+              }
+            });
+          } catch (e) {
+            console.error(e);
+          }
+
+          teamMembers.value = unifiedList;
+
+          // 3. Realtime sync if Firestore is available
+          if (isFirebaseActive && db) {
+            const publicCollection = collection(db, 'artifacts', appId, 'public', 'data', 'assessments');
+            onSnapshot(publicCollection, (snapshot) => {
+              const cloudItems = [];
+              snapshot.forEach(doc => {
+                cloudItems.push(doc.data());
+              });
+
+              // Merge unique items from cloud
+              cloudItems.forEach(item => {
+                if (!unifiedList.some(member => member.id === item.id)) {
+                  unifiedList.push(item);
+                }
+              });
+
+              teamMembers.value = [...unifiedList];
+            }, (error) => {
+              console.warn("Firestore snapshot listening failed:", error);
+            });
+          }
+        }
+
+        function deleteMemberData(id) {
+          if (id.toString().startsWith('mock-')) {
+            showToast("기본 시뮬레이션용 가상 멤버는 삭제할 수 없습니다.");
+            return;
+          }
+
+          // Delete from local memory
+          teamMembers.value = teamMembers.value.filter(member => member.id !== id);
+
+          // Delete from LocalStorage
+          try {
+            let localStore = JSON.parse(localStorage.getItem('team_assessment_data') || '[]');
+            localStore = localStore.filter(member => member.id !== id);
+            localStorage.setItem('team_assessment_data', JSON.stringify(localStore));
+          } catch (e) {
+            console.error(e);
+          }
+
+          // Delete from Firestore
+          if (isFirebaseActive && db) {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'assessments', id);
+            deleteDoc(docRef)
+              .then(() => showToast("해당 기록을 클라우드에서 제거했습니다."))
+              .catch(err => console.error(err));
+          }
+
+          if (selectedMember.value && selectedMember.value.id === id) {
+            selectedMember.value = null;
+          }
+
+          showToast("성공적으로 기록을 삭제했습니다.");
+        }
+
+        function selectTeamMember(member) {
+          selectedMember.value = member;
+          showToast(`${member.userName}님의 성향 프로필이 선택되었습니다.`);
+        }
+
+        function calculateXCoordinate(member) {
+          // X Axis represents: Active & Expressive vs Calm & Reflective.
+          // Formula uses (A + B) - (C + D). Normalized to scale of 0-100%
+          const score = member.score || { A: 10, B: 10, C: 10, D: 10 };
+          const leftForce = (score.C || 0) + (score.D || 0); // Reflective
+          const rightForce = (score.A || 0) + (score.B || 0); // Active
+          const total = Math.max(leftForce + rightForce, 1);
+          return Math.round((rightForce / total) * 80) + 10; // Margin bound 10% - 90%
+        }
+
+        function calculateYCoordinate(member) {
+          // Y Axis represents: Task (Work) vs People (Relational).
+          // Formula uses (B + C) - (A + D). Normalized to scale of 0-100%
+          const score = member.score || { A: 10, B: 10, C: 10, D: 10 };
+          const topForce = (score.B || 0) + (score.C || 0); // Task-centric
+          const bottomForce = (score.A || 0) + (score.D || 0); // People-centric
+          const total = Math.max(topForce + bottomForce, 1);
+          return Math.round((topForce / total) * 80) + 10; // Reverse coordinate grid
+        }
+
+        function getPersonalityColorClass(type) {
+          if (type === '활발형') return 'bg-activeType';
+          if (type === '주도형') return 'bg-judoType';
+          if (type === '분석형') return 'bg-analysisType';
+          return 'bg-acceptType'; // 수용형
+        }
+
+        function getPersonalityInsight(type) {
+          if (type === '활발형') return '이 팀원은 긍정적이고 말이 많으며, 사람 지향적인 환경에서 가장 효율이 좋습니다. 엄격한 규칙보다는 즉흥적 보상이 잘 맞습니다.';
+          if (type === '주도형') return '이 팀원은 성과 지향적이며 결단력이 뛰어납니다. 과도한 마이크로매니징보다는 독립된 결정 영역과 마일스톤 위주의 자율성을 원합니다.';
+          if (type === '분석형') return '이 팀원은 완벽주의자로 계획과 데이터 논리가 보증되는 과제를 정밀히 완수합니다. 충분히 검토할 시간적 여유와 팩트를 보증해 주어야 합니다.';
+          return '이 팀원은 사람들을 잘 배려하며 온화한 신뢰를 형성합니다. 급격한 구조 조율보다는 안정감과 지지적 태도로 대할 때 능력이 수직 상승합니다.';
+        }
+
+        function calculateDominantType() {
+          const counts = { '활발형': 0, '주도형': 0, '분석형': 0, '수용형': 0 };
+          teamMembers.value.forEach(m => {
+            if (counts[m.primaryType] !== undefined) counts[m.primaryType]++;
+          });
+          const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+          return sorted[0][0];
+        }
+
+        function viewTeamBoard() {
+          activeView.value = 'team';
+          nextTick(() => {
+            if (window.lucide) window.lucide.createIcons();
+          });
+        }
+
+        function copyShareLink() {
+          const dummy = document.createElement("input");
+          document.body.appendChild(dummy);
+          dummy.value = window.location.href;
+          dummy.select();
+          document.execCommand("copy");
+          document.body.removeChild(dummy);
+          showToast("URL 주소가 클립보드에 무사히 저장되었습니다! 동료들에게 전송해 보세요.");
+        }
+
+        function showToast(msg) {
+          toastMessage.value = msg;
+          setTimeout(() => {
+            if (toastMessage.value === msg) {
+              toastMessage.value = '';
+            }
+          }, 3500);
+        }
+
+        return {
+          activeView,
+          userName,
+          currentQuestionIndex,
+          currentQuestion,
+          answers,
+          scoreCounts,
+          scorePercentage,
+          resultAnalysis,
+          teamMembers,
+          toastMessage,
+          selectedMember,
+          isFirebaseActive,
+          goHome,
+          startAssessment,
+          selectAnswer,
+          prevQuestion,
+          resetTest,
+          viewTeamBoard,
+          calculateXCoordinate,
+          calculateYCoordinate,
+          getPersonalityColorClass,
+          getPersonalityInsight,
+          calculateDominantType,
+          selectTeamMember,
+          deleteMemberData,
+          copyShareLink
+        };
+      }
+    }).mount('#app');
+  </script>
+
+</body>
+</html>
