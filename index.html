@@ -545,7 +545,7 @@
               <div class="p-5 bg-white/5 rounded-2xl border border-white/10 space-y-2">
                 <span class="text-xs font-extrabold text-emerald-400 uppercase tracking-wider block">의사결정 최적화</span>
                 <p class="text-xs text-indigo-100 leading-relaxed">
-                  주도형이 리드할 때 수용형과 분석형의 의견을 정기적으로 수렴하는 안전 점검 프로세스를 도입하면 실행 실패율을 크게 낮출 수 있습니다.
+                  주도형이 리드할 때 수용형 and 분석형의 의견을 정기적으로 수렴하는 안전 점검 프로세스를 도입하면 실행 실패율을 크게 낮출 수 있습니다.
                 </p>
               </div>
 
@@ -582,34 +582,34 @@
   <script type="module">
     import { createApp, ref, computed, onMounted, nextTick } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
     
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    // Core Firebase Production Module Deliverables
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, collection, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-    // App variables
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'team-disc-assessment';
+    // Setup active App Identifier for Firestore Document Paths
+    const appId = 'team-disc-assessment';
     let db = null;
-    let auth = null;
     let isFirebaseActive = false;
 
-    // Try firebase parsing
-    let firebaseConfig = null;
-    try {
-      if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-        firebaseConfig = JSON.parse(__firebase_config);
-      }
-    } catch (e) {
-      console.warn("Firebase config parse error, using memory storage fallback:", e);
-    }
+    // Hardcoded production web connection configurations
+    const firebaseConfig = {
+      apiKey: "AIzaSyDH5e8AMPxDJnTMf9B_0QaJFFTgtfmuJpQ",
+      authDomain: "team-flow-assessment.firebaseapp.com",
+      projectId: "team-flow-assessment",
+      storageBucket: "team-flow-assessment.firebasestorage.app",
+      messagingSenderId: "555034740285",
+      appId: "1:555034740285:web:7cd705f4c07d8455a3cc54"
+    };
 
+    // Initialize core firebase link inside a safe wrapper
     if (firebaseConfig && firebaseConfig.apiKey) {
       try {
         const app = initializeApp(firebaseConfig);
         db = getFirestore(app);
-        auth = getAuth(app);
         isFirebaseActive = true;
+        console.log("Firebase initialized successfully inside core scope.");
       } catch (e) {
-        console.error("Firebase auth/firestore error:", e);
+        console.error("Firebase initializing crash protection caught error: ", e);
       }
     }
 
@@ -619,7 +619,7 @@
         const activeView = ref('intro');
         const userName = ref('');
         const currentQuestionIndex = ref(0);
-        const answers = ref({}); // Index to Chosen key ('A', 'B', 'C', 'D')
+        const answers = ref({}); 
         const teamMembers = ref([]);
         const toastMessage = ref('');
         const selectedMember = ref(null);
@@ -627,7 +627,6 @@
 
         // 40 Criteria Mapping from 성향테스트(1).jpg, 성향테스트(2).jpeg, 성향테스트(3).jpeg
         const questions = [
-          // Strengths 1~20 (A=활발, B=주도, C=분석, D=수용)
           { id: 1, A: '활발함', B: '모험적', C: '분석적', D: '편히 어울림' },
           { id: 2, A: '쾌활함', B: '설득력', C: '의지 강함', D: '조용함' },
           { id: 3, A: '사교적', B: '자기 의지 강함', C: '자기 희생적', D: '쉽게 순응' },
@@ -648,8 +647,6 @@
           { id: 18, A: '무대형', B: '지도력 있는', C: '조직적인', D: '만족 잘함' },
           { id: 19, A: '인기 좋음', B: '생산적', C: '완벽 추구', D: '남을 편안케 함' },
           { id: 20, A: '활기참', B: '과감함', C: '예의 바름', D: '균형 잡힘' },
-
-          // Weaknesses 21~40 (A=활발, B=주도, C=분석, D=수용)
           { id: 21, A: '뻔뻔스러움', B: '남을 압도', C: '수줍어함', D: '무표정함' },
           { id: 22, A: '질서가 없는', B: '냉정함', C: '용서 잘 안함', D: '열정 없음' },
           { id: 23, A: '한 말 또 함', B: '주장하고 맞섬', C: '감정이 오래감', D: '마지못해 함' },
@@ -672,7 +669,6 @@
           { id: 40, A: '변화무쌍', B: '약삭 빠름', C: '비판적', D: '타협적' }
         ];
 
-        // 5 Simulated Mock team members to keep team view active and lively
         const mockMembers = [
           { id: 'mock-1', userName: '박서현 팀장', score: { A: 6, B: 21, C: 8, D: 5 }, primaryType: '주도형', secondaryType: '분석형' },
           { id: 'mock-2', userName: '김진수 선임', score: { A: 19, B: 6, C: 11, D: 4 }, primaryType: '활발형', secondaryType: '분석형' },
@@ -681,7 +677,6 @@
           { id: 'mock-5', userName: '최지예 기획자', score: { A: 17, B: 7, C: 6, D: 10 }, primaryType: '활발형', secondaryType: '수용형' }
         ];
 
-        // Dynamic Calculations
         const currentQuestion = computed(() => questions[currentQuestionIndex.value]);
 
         const scoreCounts = computed(() => {
@@ -702,7 +697,6 @@
           };
         });
 
-        // Determine profile description based on primary/secondary results
         const resultAnalysis = computed(() => {
           const sorted = Object.entries(scoreCounts.value).sort((a, b) => b[1] - a[1]);
           const primaryKey = sorted[0][0];
@@ -749,10 +743,8 @@
           };
         });
 
-        // Setup Event Listeners and Initial Load
         onMounted(() => {
           showToast("플랫폼이 성공적으로 구동되었습니다.");
-          // Initialize Lucide icon library
           if (window.lucide) {
             window.lucide.createIcons();
           }
@@ -801,7 +793,6 @@
         }
 
         function submitTest() {
-          // Record to platform
           const finalScore = { ...scoreCounts.value };
           const pType = resultAnalysis.value.primaryType;
           const sType = resultAnalysis.value.secondaryType;
@@ -815,13 +806,10 @@
             timestamp: new Date().toISOString()
           };
 
-          // Save to Local/Firebase
           saveMemberResult(submissionData);
-
           activeView.value = 'result';
           showToast("성향 진단이 완료되었습니다!");
 
-          // Render Chart asynchronously on the next tick
           nextTick(() => {
             renderRadarChart();
             if (window.lucide) window.lucide.createIcons();
@@ -833,7 +821,6 @@
             const ctx = document.getElementById('resultRadarChart');
             if (!ctx) return;
 
-            // Destroy existing chart if active to clear memory
             if (activeChart) {
               activeChart.destroy();
             }
@@ -884,10 +871,8 @@
         }
 
         function saveMemberResult(data) {
-          // Store locally in-memory array first
           teamMembers.value.push(data);
 
-          // Save to browser LocalStorage for session persistence
           try {
             let localStore = JSON.parse(localStorage.getItem('team_assessment_data') || '[]');
             localStore.push(data);
@@ -896,7 +881,6 @@
             console.error("Local storage saving failed:", e);
           }
 
-          // If Firestore is live, save to cloud
           if (isFirebaseActive && db) {
             const publicDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'assessments', data.id);
             setDoc(publicDocRef, data)
@@ -906,10 +890,8 @@
         }
 
         function fetchTeamResults() {
-          // 1. Gather mock members for beautiful empty state
           let unifiedList = [...mockMembers];
 
-          // 2. Gather LocalStorage results
           try {
             const localStore = JSON.parse(localStorage.getItem('team_assessment_data') || '[]');
             localStore.forEach(item => {
@@ -923,7 +905,6 @@
 
           teamMembers.value = unifiedList;
 
-          // 3. Realtime sync if Firestore is available
           if (isFirebaseActive && db) {
             const publicCollection = collection(db, 'artifacts', appId, 'public', 'data', 'assessments');
             onSnapshot(publicCollection, (snapshot) => {
@@ -932,14 +913,26 @@
                 cloudItems.push(doc.data());
               });
 
-              // Merge unique items from cloud
+              let currentList = [...mockMembers];
+              
+              // Load local storage items first
+              try {
+                const localStore = JSON.parse(localStorage.getItem('team_assessment_data') || '[]');
+                localStore.forEach(item => {
+                  if (!currentList.some(member => member.id === item.id)) {
+                    currentList.push(item);
+                  }
+                });
+              } catch (e) {}
+
+              // Merge incoming real-time cloud data
               cloudItems.forEach(item => {
-                if (!unifiedList.some(member => member.id === item.id)) {
-                  unifiedList.push(item);
+                if (!currentList.some(member => member.id === item.id)) {
+                  currentList.push(item);
                 }
               });
 
-              teamMembers.value = [...unifiedList];
+              teamMembers.value = currentList;
             }, (error) => {
               console.warn("Firestore snapshot listening failed:", error);
             });
@@ -952,10 +945,8 @@
             return;
           }
 
-          // Delete from local memory
           teamMembers.value = teamMembers.value.filter(member => member.id !== id);
 
-          // Delete from LocalStorage
           try {
             let localStore = JSON.parse(localStorage.getItem('team_assessment_data') || '[]');
             localStore = localStore.filter(member => member.id !== id);
@@ -964,7 +955,6 @@
             console.error(e);
           }
 
-          // Delete from Firestore
           if (isFirebaseActive && db) {
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'assessments', id);
             deleteDoc(docRef)
@@ -985,30 +975,26 @@
         }
 
         function calculateXCoordinate(member) {
-          // X Axis represents: Active & Expressive vs Calm & Reflective.
-          // Formula uses (A + B) - (C + D). Normalized to scale of 0-100%
           const score = member.score || { A: 10, B: 10, C: 10, D: 10 };
-          const leftForce = (score.C || 0) + (score.D || 0); // Reflective
-          const rightForce = (score.A || 0) + (score.B || 0); // Active
+          const leftForce = (score.C || 0) + (score.D || 0); 
+          const rightForce = (score.A || 0) + (score.B || 0); 
           const total = Math.max(leftForce + rightForce, 1);
-          return Math.round((rightForce / total) * 80) + 10; // Margin bound 10% - 90%
+          return Math.round((rightForce / total) * 80) + 10; 
         }
 
         function calculateYCoordinate(member) {
-          // Y Axis represents: Task (Work) vs People (Relational).
-          // Formula uses (B + C) - (A + D). Normalized to scale of 0-100%
           const score = member.score || { A: 10, B: 10, C: 10, D: 10 };
-          const topForce = (score.B || 0) + (score.C || 0); // Task-centric
-          const bottomForce = (score.A || 0) + (score.D || 0); // People-centric
+          const topForce = (score.B || 0) + (score.C || 0); 
+          const bottomForce = (score.A || 0) + (score.D || 0); 
           const total = Math.max(topForce + bottomForce, 1);
-          return Math.round((topForce / total) * 80) + 10; // Reverse coordinate grid
+          return Math.round((topForce / total) * 80) + 10; 
         }
 
         function getPersonalityColorClass(type) {
           if (type === '활발형') return 'bg-activeType';
           if (type === '주도형') return 'bg-judoType';
           if (type === '분석형') return 'bg-analysisType';
-          return 'bg-acceptType'; // 수용형
+          return 'bg-acceptType'; 
         }
 
         function getPersonalityInsight(type) {
@@ -1024,7 +1010,7 @@
             if (counts[m.primaryType] !== undefined) counts[m.primaryType]++;
           });
           const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-          return sorted[0][0];
+          return sorted[0] ? sorted[0][0] : '활발형';
         }
 
         function viewTeamBoard() {
@@ -1084,24 +1070,5 @@
       }
     }).mount('#app');
   </script>
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // Your web app's Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyDH5e8AMPxDJnTMf9B_0QaJFFTgtfmuJpQ",
-    authDomain: "team-flow-assessment.firebaseapp.com",
-    projectId: "team-flow-assessment",
-    storageBucket: "team-flow-assessment.firebasestorage.app",
-    messagingSenderId: "555034740285",
-    appId: "1:555034740285:web:7cd705f4c07d8455a3cc54"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-</script>
 </body>
 </html>
