@@ -42,7 +42,7 @@
   </script>
 
   <!-- Google Fonts & Lucide Icons -->
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght=300;400;500;700;900&family=Inter:wght=300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- Chart.js CDN -->
@@ -529,30 +529,28 @@
             </h3>
             
             <p class="text-indigo-200 text-sm leading-relaxed max-w-4xl">
-              현재 참여한 데이터를 기반으로, 우리 팀은 
-              <span class="text-amber-400 font-bold underline">{{ calculateDominantType() }}</span> 성향이 우세한 상태입니다. 
-              목표 달성 능력을 극대화하기 위해 아래와 같은 협업 전술을 취해 보세요.
+              {{ dynamicSynergyReport.intro }}
             </p>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
               <div class="p-5 bg-white/5 rounded-2xl border border-white/10 space-y-2">
                 <span class="text-xs font-extrabold text-amber-400 uppercase tracking-wider block">소통 전술</span>
-                <p class="text-xs text-indigo-100 leading-relaxed">
-                  활발형의 열린 소통과 분석형의 신중한 팩트 체크가 조화를 이루도록 회의를 두 단계(아이디어 확장 - 논리 필터링)로 진행하세요.
+                <p class="text-xs text-indigo-100 leading-relaxed whitespace-pre-line">
+                  {{ dynamicSynergyReport.communication }}
                 </p>
               </div>
 
               <div class="p-5 bg-white/5 rounded-2xl border border-white/10 space-y-2">
                 <span class="text-xs font-extrabold text-emerald-400 uppercase tracking-wider block">의사결정 최적화</span>
-                <p class="text-xs text-indigo-100 leading-relaxed">
-                  주도형이 리드할 때 수용형 and 분석형의 의견을 정기적으로 수렴하는 안전 점검 프로세스를 도입하면 실행 실패율을 크게 낮출 수 있습니다.
+                <p class="text-xs text-indigo-100 leading-relaxed whitespace-pre-line">
+                  {{ dynamicSynergyReport.decision }}
                 </p>
               </div>
 
               <div class="p-5 bg-white/5 rounded-2xl border border-white/10 space-y-2">
                 <span class="text-xs font-extrabold text-indigo-400 uppercase tracking-wider block">피해야 할 마찰</span>
-                <p class="text-xs text-indigo-100 leading-relaxed">
-                  약점 평가 어휘(21~40)를 토대로 구성원의 컨디션 저하 시 서로 예민해질 수 있는 포인트를 존중하고 감성적인 지지 기반을 나누는 것이 필요합니다.
+                <p class="text-xs text-indigo-100 leading-relaxed whitespace-pre-line">
+                  {{ dynamicSynergyReport.friction }}
                 </p>
               </div>
             </div>
@@ -567,7 +565,6 @@
     <footer class="bg-white border-t border-slate-200 py-8 mt-12 text-center text-slate-400 text-xs">
       <div class="max-w-7xl mx-auto px-4 space-y-2">
         <p class="font-medium text-slate-500">© 2026 TeamFlow. 성향 진단 & 시너지 보드 플랫폼.</p>
-        <p>어휘 기준 출처: 성향테스트(1).jpg, 성향테스트(2).jpeg, 성향테스트(3).jpeg</p>
       </div>
     </footer>
 
@@ -735,6 +732,71 @@
             strengths: detailDatabase[pName]?.strengths || [],
             weaknesses: detailDatabase[pName]?.weaknesses || [],
             collaborationAdvice: detailDatabase[pName]?.collaborationAdvice || ''
+          };
+        });
+
+        // 100% Dynamic Synergy Report computation engine
+        const dynamicSynergyReport = computed(() => {
+          if (teamMembers.value.length === 0) {
+            return {
+              intro: "아직 등록된 팀원이 없습니다. 팀원들이 진단을 마치면 이 자리에 맞춤형 협업 시너지 리포트가 생성됩니다.",
+              communication: "팀원들이 등록되면 실시간 성향 분석을 통해 맞춤형 소통 전술을 제안해 드립니다.",
+              decision: "주도형, 활발형, 분석형, 수용형의 비율을 연산하여 최적의 의사결정 프로세스를 도출합니다.",
+              friction: "서로 다른 성향 간에 마찰이 생길 수 있는 지점과 예방책을 동적으로 제시합니다."
+            };
+          }
+
+          const counts = { '활발형': 0, '주도형': 0, '분석형': 0, '수용형': 0 };
+          teamMembers.value.forEach(m => {
+            if (counts[m.primaryType] !== undefined) counts[m.primaryType]++;
+          });
+
+          const total = teamMembers.value.length;
+          const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+          const dominantType = sorted[0][0];
+          const dominantCount = sorted[0][1];
+          const dominantRatio = Math.round((dominantCount / total) * 100);
+
+          let intro = `현재 참여한 ${total}명의 데이터를 분석한 결과, 우리 팀은 [${dominantType}] 성향이 ${dominantRatio}% 비율로 가장 우세한 상태입니다. 우리 팀의 유기적 조화를 달성하기 위해 아래 전술들을 꼭 상기해 보세요.`;
+          let communication = "";
+          let decision = "";
+          let friction = "";
+
+          // Contextualizing based on the primary dominant team energy
+          if (dominantType === '주도형') {
+            communication = "주도형이 이끄는 조직은 빠르고 결론 지향적인 소통이 중심입니다. 감정적 서론을 생략하고, 핵심 지표와 타임라인 위주로 미팅을 짧게 진행할 때 업무 집중도가 극대화됩니다.";
+            decision = "업무 속도는 강력하지만 리스크 검증을 건너뛰기 쉽습니다. 최종 승인 전 분석형 구성원에게 디테일한 팩트 감수를 맡기거나, 수용형의 안정성 피드백을 수렴하는 안전 브레이크를 명확히 배치하세요.";
+            friction = "과정 속에서 다른 팀원들의 피로감이나 조용한 거부 반응을 인지하지 못할 수 있습니다. 성과 달성에 집중하는 만큼, 동료들의 정서적 지지 상태를 체크해 주는 온화한 완충 장치가 절대적으로 요구됩니다.";
+          } else if (dominantType === '활발형') {
+            communication = "활발형이 우세한 경우, 대단히 쾌활하고 창의적 발상 회의가 무제한 일어납니다. 단, 말만 무성한 미팅으로 끝나기 쉬우니 회의 마다 한 명의 서기(분석형 추천)를 명문화하여 아카이빙을 하세요.";
+            decision = "감정적인 긍정론에 휩쓸려 과대평가 결정을 할 우려가 큽니다. 비즈니스 리스크를 논증할 때, 분석형의 냉철한 숫자 데이터나 손익 분기점 분석 리포트를 필수로 대조하여 결정의 단단함을 확보하세요.";
+            friction = "진행이 정밀하지 못하고 마무리가 약해 계획이 허공으로 사라질 때 갈등이 촉발됩니다. 시간표를 밀도 있게 독려할 주도형과 서류 작업을 구체화할 분석형의 롤을 사전에 시스템적으로 분담하는 게 안전합니다.";
+          } else if (dominantType === '분석형') {
+            communication = "분석형이 많은 조직은 대단히 공정하고 사실 관계에 집중합니다. 모호하거나 추상적인 용어 대신, 정량화된 수치와 타당한 논리를 문서화하여 공유할 때 상호 신뢰와 협조도가 치솟습니다.";
+            decision = "최고의 정확도를 찾다가 '분석 마비(Analysis Paralysis)'에 걸려 실행 타이밍을 지연시킬 리스크가 상존합니다. '70~80% 수준의 자료 완성 시점에 일단 빠르게 배포 후 디버깅하는 주기성 규칙'을 두는 것이 좋습니다.";
+            friction = "서로의 세밀한 오류에 엄격하게 정곡을 찔러 감정이 상하거나 차갑게 냉전으로 빠질 수 있습니다. 회의 초반 5분은 비업무적인 안부와 지지 메시지를 가볍게 조율해 주는 수용형/활발형의 에너지를 빌리는 지혜가 필요합니다.";
+          } else if (dominantType === '수용형') {
+            communication = "수용형 중심의 팀은 서로에 대한 따뜻한 지지와 동료애가 탁월합니다. 다만, 쓴소리를 꺼려하기 때문에 아이디어나 개선 제안을 모을 때는 1:1 방식 혹은 무기명 건의함 등 '안전함이 보장된 소통 채널'을 구축해야 합니다.";
+            decision = "아무도 악역을 자처하거나 추진의 총대를 메지 않으려 하여 회의가 결론 없이 미뤄질 수 있습니다. 주도형 팀원에게 명확한 중재 책임을 전수하거나 프로젝트마다 로테이션 리더제를 부여해 추진력을 수혈하십시오.";
+            friction = "마찰을 회피하다가 속으로 번아웃이 오고 갑자기 폭발할 수 있습니다. 각 구성원들의 개인적 컨디션 체크(1:1 차담회 등)를 정기적으로 행하여, 침묵 속에 묻힌 깊이 있는 피드백을 경청해야 합니다.";
+          }
+
+          // Gap analysis: If there is a missing archetype in the current team
+          const missingTypes = [];
+          if (counts['주도형'] === 0) missingTypes.push('주도형(추진 개척력)');
+          if (counts['분석형'] === 0) missingTypes.push('분석형(디테일 감수)');
+          if (counts['활발형'] === 0) missingTypes.push('활발형(활기 및 아이디어 발산)');
+          if (counts['수용형'] === 0) missingTypes.push('수용형(공감 및 중재)');
+
+          if (missingTypes.length > 0) {
+            friction += `\n\n💡 우리 팀 내 보완 포인트: 현재 데이터상 팀 내에 [${missingTypes.join(', ')}] 강점을 담당해 줄 핵심 유형이 부재하거나 극소수입니다. 업무 계획 시 해당 결핍 요소를 보조하기 위한 체크리스트 규칙을 추가하여 시스템적으로 보완하는 방안을 추천합니다.`;
+          }
+
+          return {
+            intro,
+            communication,
+            decision,
+            friction
           };
         });
 
@@ -985,7 +1047,6 @@
           return 'bg-acceptType'; 
         }
 
-        // Return a dynamic summary indicator of the team's composition
         function calculateDominantType() {
           if (teamMembers.value.length === 0) return '미등록';
           const counts = { '활발형': 0, '주도형': 0, '분석형': 0, '수용형': 0 };
@@ -1010,6 +1071,7 @@
           });
         }
 
+        // Shared link utility
         function copyShareLink() {
           const dummy = document.createElement("input");
           document.body.appendChild(dummy);
@@ -1055,7 +1117,8 @@
           calculateDominantType,
           selectTeamMember,
           deleteMemberData,
-          copyShareLink
+          copyShareLink,
+          dynamicSynergyReport
         };
       }
     }).mount('#app');
