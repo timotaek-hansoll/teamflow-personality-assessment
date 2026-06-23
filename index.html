@@ -669,13 +669,8 @@
           { id: 40, A: '변화무쌍', B: '약삭 빠름', C: '비판적', D: '타협적' }
         ];
 
-        const mockMembers = [
-          { id: 'mock-1', userName: '박서현 팀장', score: { A: 6, B: 21, C: 8, D: 5 }, primaryType: '주도형', secondaryType: '분석형' },
-          { id: 'mock-2', userName: '김진수 선임', score: { A: 19, B: 6, C: 11, D: 4 }, primaryType: '활발형', secondaryType: '분석형' },
-          { id: 'mock-3', userName: '정다운 대리', score: { A: 4, B: 5, C: 12, D: 19 }, primaryType: '수용형', secondaryType: '분석형' },
-          { id: 'mock-4', userName: '이민형 연구원', score: { A: 5, B: 10, C: 20, D: 5 }, primaryType: '분석형', secondaryType: '주도형' },
-          { id: 'mock-5', userName: '최지예 기획자', score: { A: 17, B: 7, C: 6, D: 10 }, primaryType: '활발형', secondaryType: '수용형' }
-        ];
+        // Example profiles removed completely to start fresh
+        const mockMembers = [];
 
         const currentQuestion = computed(() => questions[currentQuestionIndex.value]);
 
@@ -890,7 +885,7 @@
         }
 
         function fetchTeamResults() {
-          let unifiedList = [...mockMembers];
+          let unifiedList = [];
 
           try {
             const localStore = JSON.parse(localStorage.getItem('team_assessment_data') || '[]');
@@ -913,9 +908,8 @@
                 cloudItems.push(doc.data());
               });
 
-              let currentList = [...mockMembers];
+              let currentList = [];
               
-              // Load local storage items first
               try {
                 const localStore = JSON.parse(localStorage.getItem('team_assessment_data') || '[]');
                 localStore.forEach(item => {
@@ -925,7 +919,6 @@
                 });
               } catch (e) {}
 
-              // Merge incoming real-time cloud data
               cloudItems.forEach(item => {
                 if (!currentList.some(member => member.id === item.id)) {
                   currentList.push(item);
@@ -940,11 +933,6 @@
         }
 
         function deleteMemberData(id) {
-          if (id.toString().startsWith('mock-')) {
-            showToast("기본 시뮬레이션용 가상 멤버는 삭제할 수 없습니다.");
-            return;
-          }
-
           teamMembers.value = teamMembers.value.filter(member => member.id !== id);
 
           try {
@@ -997,20 +985,22 @@
           return 'bg-acceptType'; 
         }
 
-        function getPersonalityInsight(type) {
-          if (type === '활발형') return '이 팀원은 긍정적이고 말이 많으며, 사람 지향적인 환경에서 가장 효율이 좋습니다. 엄격한 규칙보다는 즉흥적 보상이 잘 맞습니다.';
-          if (type === '주도형') return '이 팀원은 성과 지향적이며 결단력이 뛰어납니다. 과도한 마이크로매니징보다는 독립된 결정 영역과 마일스톤 위주의 자율성을 원합니다.';
-          if (type === '분석형') return '이 팀원은 완벽주의자로 계획과 데이터 논리가 보증되는 과제를 정밀히 완수합니다. 충분히 검토할 시간적 여유와 팩트를 보증해 주어야 합니다.';
-          return '이 팀원은 사람들을 잘 배려하며 온화한 신뢰를 형성합니다. 급격한 구조 조율보다는 안정감과 지지적 태도로 대할 때 능력이 수직 상승합니다.';
-        }
-
+        // Return a dynamic summary indicator of the team's composition
         function calculateDominantType() {
+          if (teamMembers.value.length === 0) return '미등록';
           const counts = { '활발형': 0, '주도형': 0, '분석형': 0, '수용형': 0 };
           teamMembers.value.forEach(m => {
             if (counts[m.primaryType] !== undefined) counts[m.primaryType]++;
           });
           const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-          return sorted[0] ? sorted[0][0] : '활발형';
+          return sorted[0] ? sorted[0][0] : '미등록';
+        }
+
+        function getPersonalityInsight(type) {
+          if (type === '활발형') return '이 팀원은 긍정적이고 말이 많으며, 사람 지향적인 환경에서 가장 효율이 좋습니다. 엄격한 규칙보다는 즉흥적 보상이 잘 맞습니다.';
+          if (type === '주도형') return '이 팀원은 성과 지향적이며 결단력이 뛰어납니다. 과도한 마이크로매니징보다는 독립된 결정 영역과 마일스톤 위주의 자율성을 원합니다.';
+          if (type === '분석형') return '이 팀원은 완벽주의자로 계획과 데이터 논리가 보증되는 과제를 정밀히 완수합니다. 충분히 검토할 시간적 여유와 팩트를 보증해 주어야 합니다.';
+          return '이 팀원은 사람들을 잘 배려하며 온화한 신뢰를 형성합니다. 급격한 구조 조율보다는 안정감과 지지적 태도로 대할 때 능력이 수직 상승합니다.';
         }
 
         function viewTeamBoard() {
