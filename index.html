@@ -510,7 +510,7 @@
                 <span class="text-[10px] font-extrabold text-indigo-600">성향: {{ selectedMember.primaryType }}</span>
               </div>
               <p class="text-[11px] text-slate-500 leading-relaxed" v-if="selectedMember">
-                "이 팀원은 {{ getPersonalityInsight(selectedMember.primaryType) }}"
+                "{{ getPersonalityInsight(selectedMember.primaryType) }}"
               </p>
               <p class="text-[11px] text-slate-400 text-center italic py-2" v-else>
                 목록에서 팀원을 클릭하여 상세 코멘트를 살펴보세요.
